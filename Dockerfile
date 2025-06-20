@@ -1,20 +1,28 @@
-# Use Node.js as the base image
-FROM node:20
+FROM node:20-slim
 
-# Install ffmpeg with HEIC support
-RUN apt-get update && \
-    apt-get install -y ffmpeg libheif-dev libde265-0 libx265-dev && \
-    apt-get clean
+# Install necessary tools and libraries
+RUN apt-get update && apt-get install -y \
+  ffmpeg \
+  libheif-dev \
+  libx265-dev \
+  libde265-dev \
+  libaom-dev \
+  wget \
+  curl \
+  ca-certificates \
+  build-essential \
+  && rm -rf /var/lib/apt/lists/*
 
-# Create app directory
+# Set working directory
 WORKDIR /app
 
-# Copy app files and install dependencies
-COPY . .
+# Copy files
+COPY package*.json ./
 RUN npm install
+COPY . .
 
-# Expose app port
+# Expose port (if using Express or similar)
 EXPOSE 3000
 
-# Start app
+# Start server
 CMD ["node", "index.js"]
