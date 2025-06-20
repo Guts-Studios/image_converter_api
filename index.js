@@ -1,7 +1,9 @@
 const express = require('express');
 const multer = require('multer');
-const sharp = require('sharp');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
+const { execFile } = require('child_process');
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -15,18 +17,24 @@ app.post('/convert', upload.single('image'), async (req, res) => {
     return res.status(400).json({ error: 'No file uploaded' });
   }
 
-  try {
-    const converted = await sharp(req.file.buffer)
-      .toFormat(format)
-      .toBuffer();
+  const inputPath = `/tmp/${Date.now()}_input.heic`;
+  const outputPath = `/tmp/${Date.now()}_output.${format}`;
+  fs.writeFileSync(inputPath, req.file.buffer);
 
+  execFile('ffmpeg', ['-i', inputPath, outputPath], (err) => {
+    if (err) {
+      console.error('FFmpeg Error:', err);
+      return res.status(500).json({ error: 'Image conversion failed' });
+    }
+
+    const output = fs.readFileSync(outputPath);
     res.setHeader('Content-Disposition', `attachment; filename=converted.${format}`);
     res.setHeader('Content-Type', `image/${format}`);
-    res.send(converted);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Image conversion failed' });
-  }
+    res.send(output);
+
+    fs.unlinkSync(inputPath);
+    fs.unlinkSync(outputPath);
+  });
 });
 
 const PORT = process.env.PORT || 3000;
