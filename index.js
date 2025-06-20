@@ -16,7 +16,8 @@ app.post('/convert', upload.single('image'), async (req, res) => {
   }
 
   try {
-    // Sharp should handle HEIC now
+    console.log(`Converting ${req.file.originalname} to ${format}`);
+    
     const converted = await sharp(req.file.buffer)
       .toFormat(format)
       .toBuffer();
@@ -24,11 +25,19 @@ app.post('/convert', upload.single('image'), async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename=converted.${format}`);
     res.setHeader('Content-Type', `image/${format}`);
     res.send(converted);
+    
+    console.log('Conversion successful');
   } catch (error) {
     console.error('Conversion error:', error);
-    res.status(500).json({ error: 'Image conversion failed', details: error.message });
+    res.status(500).json({ 
+      error: 'Image conversion failed', 
+      details: error.message 
+    });
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Image Converter API running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Image Converter API running on port ${PORT}`);
+  console.log('Sharp version:', sharp.versions);
+});
